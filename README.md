@@ -3,7 +3,7 @@
  
 ## Abstract text.
  
-Title: Time series analysis and predicting COVID-19 by MTS Model in the Hospital Sant Joan de Deu of Martorell, Catalonia <br>
+Title: Time series analysis and predicting COVID-19 by MTS Model in the Hospital Sant Joan de Deu of Martorell, Catalonia. <br>
 Postal address: Av. Diagonal, 643 , University of Barcelona. Barcelona (Spain)<br>
 
 1.Introduction: The COVID-19 pandemic has affected multiple regions and countries. The COVID-19 pandemic has triggered that primary care, hospitalization and emergency health services are better prepared. This is important to have timely care for patients sick with COVID-19 or other pathologies. In the current research, the dynamics of COVID-19 was studied at the Hospital “Sant Joan de Deu” of Martorell, Spain.<br> 
@@ -13,4 +13,17 @@ Postal address: Av. Diagonal, 643 , University of Barcelona. Barcelona (Spain)<b
 5.Discussion: Data forecasting has become important since the start of the COVID-19 pandemic. The forecast results are reasonable with few cases per variable in the temporal series of the Hospital “Sant Joan de Deu” of Martorell. Data predictions for COVID-19 could be useful to create prevention strategies in the community.
 
 **Key Words: COVID-19, Epidemic Dynamics, Modelling, Temporal Series.**
+
+### Contact us:
+Nicolas Ayala Aldana <br>
+Department of Microbiology, Genetics and Statistics - University of Barcelona <br>
+nayalaaldana@gmail.com ; nayalaal28@alumnes.ub.edu <br>
+
+Dr. Antonio Monleon Getino <br>
+Department of Microbiology, Genetics and Statistics - University of Barcelona <br>
+amonleong@ub.edu <br>
+
+Dr. Jaume Canela Soler <br>
+Department of Preventive Medicine and Public Health - Hospital Clinic, University of Barcelona <br>
+jcanela@ub.edu <br>
 
