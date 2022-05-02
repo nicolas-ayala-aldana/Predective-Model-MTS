@@ -1,0 +1,1015 @@
+---
+title: "martorell 2021"
+author: "Nicolas Ayala"
+date: "10-01-2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+##Load dataset (columns and rows as a rectangule of data)
+```{r}
+#Load dataframe
+library(readxl)
+df_martorell_2021 <- read_excel("DADES_TD_AYALA_051221.xlsx", range = "A4:G277", col_types = c("date", "numeric", "numeric", 
+        "numeric", "numeric", "numeric", 
+        "numeric"))
+View(df_martorell_2021)
+
+#Rename cols (7 cols)
+colnames(df_martorell_2021)<-c("date","cases_attended","total_hospitalized", "patientes_pending_pcr","new_cases_user", "new_cases_professional", "patient_discharge")
+
+#Add col of consecutive day
+library(tibble)
+df_martorell_2021= add_column(df_martorell_2021, consecutive_days = 1:273, .after = "date")
+
+#Add total cases 
+library(dplyr)
+df_martorell_2021 <- df_martorell_2021 %>% rowwise() %>%
+  mutate(total_newcases_day = sum(c_across("new_cases_user":"new_cases_professional")))
+
+#Moving column("patient_discharge") at the end. In this way, "total_newcases_day" is together to"patientes_pending_pcr" and "new_cases_user"
+df_martorell_2021<-df_martorell_2021 %>% relocate(patient_discharge, .after = patientes_pending_pcr)
+
+```
+
+##Variables
+```{r}
+##Showing the cols names
+names(df_martorell_2021)
+
+##Sample Size and numbers of variables
+dim(df_martorell_2021)
+
+##Null Values: False
+table(is.null(df_martorell_2021))
+
+##Class of Cols.
+sapply(df_martorell_2021, class)
+```
+
+
+##Summary and descriptive analysis
+```{r}
+## Min, 1Q, Median, Mean, 3Q and Max Values
+summary(df_martorell_2021)
+
+## Summary of Variables
+library(Hmisc)
+describe(df_martorell_2021)
+
+```
+##Distribution of data
+```{r}
+## Distribution-Hospital of Martorell 20221 (january-agost)
+layout(matrix(c(1:5), nrow=1))
+boxplot(df_martorell_2021$total_newcases_day, col="lightgreen", main="Daily New Cases", ylab= "N°Cases", ylim= c(0,25))
+boxplot(df_martorell_2021$cases_attended, col="lightgreen", main= "Total attended", ylim= c(0,25))
+boxplot(df_martorell_2021$total_hospitalized, col="lightgreen", main="Daily Hospitalized",  ylim= c(0,25))
+boxplot(df_martorell_2021$patient_discharge, col="lightgreen", main="Daily Discharge", ylim= c(0,25))
+boxplot(df_martorell_2021$patientes_pending_pcr, col="lightgreen", main="PCR in process", ylim= c(0,25))
+```
+##Plot of Variables
+```{r}
+#1.Cases per consecutive days
+library(ggplot2)
+plot1<-ggplot(data=df_martorell_2021, aes(y=total_newcases_day, x=date)) +
+  geom_line(color="steelblue")+
+   theme_bw()+
+   ylim(0, 15)+
+   ggtitle (" Daily new cases.")+
+   xlab("2021")+
+   ylab("Cases")
+
+
+#2.Cases in Hospital of Martorell
+library(ggplot2)
+plot2<-ggplot(data=df_martorell_2021, aes(y=cases_attended, x=date)) +
+  geom_line(color="steelblue")+
+   theme_bw()+
+   ylim(0, 15)+
+   ggtitle (" Total Cases in all Services.")+
+   xlab("2021")+
+   ylab("Cases")
+
+
+#Cases COVID-19 Hospitalized
+library(ggplot2)
+plot3<-ggplot(data=df_martorell_2021, aes(y=total_hospitalized, x=date)) +
+  geom_line(color="steelblue")+
+   theme_bw()+
+   ylim(0, 15)+
+   ggtitle (" COVID-19 Hospitalized.")+
+   xlab("2021")+
+   ylab("Cases")
+
+#Patient Discharged
+library(ggplot2)
+plot4<-ggplot(data=df_martorell_2021, aes(y=patient_discharge, x=date)) +
+  geom_line(color="steelblue")+
+   theme_bw()+
+   ylim(0, 15)+
+   ggtitle (" Discharged Patient.")+
+   xlab("2021")+
+   ylab("Cases")
+
+plot1
+plot2
+plot3
+plot4
+
+
+```
+
+#Cowplot for New Cases, Total Cases, Hospitalized and Discharged Patient
+```{r}
+library(cowplot)
+plot_grid(plot1,plot2,plot3,plot4,labels = c("A", "B", "C", "D"), ncol = 2, nrow = 2)
+
+```
+
+
+## Total cases and new cases
+```{r}
+library(ggplot2)
+ggplot(data=df_martorell_2021) +
+   geom_line(aes(x=date,y=df_martorell_2021$total_newcases_day),color='red', size=0.1)+
+   geom_col(aes(x=date,y=df_martorell_2021$cases_attended),fill = "#00abff", alpha=0.5)+
+   ylim(0,25)+
+   ylab('Cases')+xlab('Date 2021')+
+  theme_bw()+
+   ggtitle("Cases COVID-19 in Hospital of Martorell")
+
+```
+
+
+##Total Cases, new cases and hospitalized patients.
+## Otra opcion es suavizar la linea con la media de 7 dias
+```{r}
+library(ggplot2)
+ggplot(data=df_martorell_2021) +
+  geom_line(aes(x=date,y=df_martorell_2021$total_newcases_day),color='red', size=0.2)+
+  geom_col(aes(x=date,y=df_martorell_2021$cases_attended),fill = "#00abff", alpha=0.5)+
+  geom_line(aes(x=date,y=df_martorell_2021$total_hospitalized),color=8, size=0.1)+
+  theme_bw()+
+  ylim(0,25)+
+  ylab('Cases')+xlab('Date 2021')+
+  ggtitle("Cases COVID-19 in Hospital of Martorell")
+
+
+```
+## Comparison with Martorell Data
+## Web source (12/01/2021): https://dadescovid.cat/descarregues?lang=cas&tipus_territori=territori&scol=EXITUS&id_html=up_1_5&codi=08114&tipus=municipi
+```{r}
+#Import dataset.
+library(readr)
+municipi <- read_delim("casos_municipi.csv", delim = ";", escape_double = FALSE, col_types = cols(TIPUSCASDATA = col_date(format = "%d/%m/%Y")), trim_ws = TRUE)
+#View(municipi)
+martorell_town<-filter (municipi,MUNICIPIDESCRIPCIO  == "MARTORELL") 
+
+##Summarise per date
+library(dplyr)
+martorell_town<-martorell_town %>%group_by(TIPUSCASDATA) %>%
+summarise(TOTCASOS = sum(NUMCASOS))
+
+
+#Rename cols (7 cols)
+colnames(martorell_town)<-c("date","total_cases")
+
+#Add col of consecutive day
+library(dplyr)
+martorell_town$consecutive_days <- 1:nrow(martorell_town) 
+martorell_town <- martorell_town %>% relocate(consecutive_days, .before = total_cases)
+
+#head of Dataframe
+head(martorell_town)
+
+```
+
+
+##Martorell Township Variables
+```{r}
+##Showing the cols names
+names(martorell_town)
+
+##Sample Size and numbers of variables: 1062 rows, 7 cols
+dim(martorell_town)
+
+##Null Values: False
+table(is.null(martorell_town))
+
+##Class of Cols.
+sapply(martorell_town, class)
+```
+
+
+```{r}
+##COVID-19 cases in 2020-2022
+## Personas las personas vacunadas dentro del hospital. 
+
+library(ggplot2)
+a<-ggplot(data= martorell_town , aes(date, total_cases))+
+  geom_col()+
+  ggtitle("Cases in Martorell: 2020-2022")+
+  ylim(0,35)
+
+
+b<-ggplot(data= martorell_town , aes(date, total_cases))+
+  geom_col()+
+  scale_x_date(limits = as.Date(c("2020-01-01", "2020-09-30")))+
+  ggtitle("Cases in Martorell: Jan-Sept 2020")+
+  ylim(0,35)
+
+##COVID cases in 2021 (jan-sept)
+c<-ggplot(data= martorell_town , aes(date, total_cases))+
+  geom_col()+
+  scale_x_date(limits = as.Date(c("2021-01-01", "2021-09-30")))+
+  ggtitle("Cases in Martorell: Jan-Sept 2021")+
+  ylim(0, 35)
+
+##
+library(cowplot)
+plot_grid(b,c, labels = c("A", "B", "C"), ncol = 1, nrow = 3)
+         
+```
+
+
+##Summary and descriptive analysis
+```{r}
+## Min, 1Q, Median, Mean, 3Q and Max Values
+summary(martorell_town)
+
+## Summary of Variables
+library(Hmisc)
+describe(martorell_town)
+
+```
+
+
+##Linear regression
+```{r}
+##A hypothesis could be that when cases increase, mortality increases. This is NOT a valid conclusion. A simple regression of deaths vs. cases and time could shows the passage of time has more explanatory power than cases in predicting deaths. We need number of deaths Plot ideas: Comparison 2020 vs 2021,Comparison Catalonia, Barcelona, Martorell.
+
+# passage of time affects deaths more than cases (?)
+lm(mortality_7days ~ cases_7day + date, data = df_martorell_2021) %>%
+  tidy() %>%
+  gt() %>% 
+  tab_options(table.width = "60%") %>%
+  tab_style(style = table_style, 
+            locations = cells_body()) %>% 
+  opt_all_caps()
+
+```
+
+
+
+##Predictive Model
+
+##Idea: To check predective model: Linear regresion, Multivariate, Bayes or Montecarlo.
+
+## Testing predective model covid.cases.cumcases3(BDSbiost3): Using first fifty days of new cases.
+```{r}
+# Predective model 
+library(BDSbiost3)
+pred.cases.fifty_days<-covid.cases.cumcases3(X=df_martorell_2021[1:50,]$consecutive_days, Y=df_martorell_2021[1:50,]$total_newcases_day, max.cases.free=T, max.cases = max(df_martorell_2021[1:50,]$total_newcases_day) , lim.days=60,iterations = 20,label.ind="Cases COVID-19", duration_pandemic=55,join.mod2 = F)
+
+# Graph Cases for 50 days"
+library(ggplot2)
+ggplot(data= df_martorell_2021[1:60,], aes(consecutive_days, total_newcases_day))+
+  geom_line(aes(colour=consecutive_days))+
+  ggtitle("Cases in Martorell: 60 days")+
+  ylim(0,12)+
+  scale_y_continuous(breaks = seq(0, 12, by = 1))+
+  scale_x_continuous(breaks = seq(0, 60, by = 10))+
+  geom_vline(xintercept=which(df_martorell_2021$consecutive_days == '50'), linetype="dashed" , alpha= 0.5)
+
+
+# Range between 50-60 day: All days. 
+r50_60<- range(df_martorell_2021[50:60,]$total_newcases_day)
+print(r50_60)
+
+#The range obtained is within the confidence interval except one point (day 56)
+```
+
+## 100-110 days
+```{r}
+## Pred
+library(ggplot2)
+library(BDSbiost3)
+pred.cases.onehundred<-covid.cases.cumcases3(X=df_martorell_2021[1:100,]$consecutive_days, Y=df_martorell_2021[1:100,]$total_newcases_day, max.cases.free=T, max.cases = max(df_martorell_2021[1:100,]$total_newcases_day) , lim.days=110,iterations = 20,label.ind="Cases COVID-19", duration_pandemic=110,join.mod2 = F)
+
+library(ggplot2)
+ggplot(data= df_martorell_2021[1:110,], aes(consecutive_days, total_newcases_day))+
+geom_line(aes(colour=consecutive_days))+
+ggtitle("Cases in Martorell: 110 days")+
+ylim(0,12)+
+scale_y_continuous(breaks = seq(0, 12, by = 1))+
+scale_x_continuous(breaks = seq(0, 110, by = 10))+
+geom_vline(xintercept=which(df_martorell_2021$consecutive_days == '100'), linetype="dashed" , alpha= 0.5)
+
+r100_110<- range(df_martorell_2021[100:110,]$total_newcases_day)
+print(r100_110)
+
+#The range obtained is within the confidence interval.
+
+
+```
+
+
+## 200-210 days
+```{r}
+library(BDSbiost3)
+pred.cases.onehundred<-covid.cases.cumcases3(X=df_martorell_2021[1:200,]$consecutive_days, Y=df_martorell_2021[1:200,]$total_newcases_day, max.cases.free=T, max.cases = max(df_martorell_2021[1:200,]$total_newcases_day) , lim.days=210,iterations = 20,label.ind="Cases COVID-19", duration_pandemic=110,join.mod2 = F)
+
+library(ggplot2)
+ggplot(data= df_martorell_2021[1:210,], aes(consecutive_days, total_newcases_day))+
+  geom_line(aes(colour=consecutive_days))+
+  ggtitle("Cases in Martorell: 200 days")+
+  ylim(0,18)+
+  scale_y_continuous(breaks = seq(0, 20, by = 1))+
+  scale_x_continuous(breaks = seq(0, 210, by = 10))+
+    geom_vline(xintercept=which(df_martorell_2021$consecutive_days == '200'), linetype="dashed" , alpha= 0.5)
+
+r200_210<- range(df_martorell_2021[200:110,]$total_newcases_day)
+print(r200_210)
+
+#The range obtained is not within the confidence interval.
+
+
+```
+
+## 250-260 days
+```{r}
+library(BDSbiost3)
+pred.cases.onehundred<-covid.cases.cumcases3(X=df_martorell_2021[1:250,]$consecutive_days, Y=df_martorell_2021[1:250,]$total_newcases_day, max.cases.free=T, max.cases = max(df_martorell_2021[1:250,]$total_newcases_day) , lim.days=260,iterations = 20,label.ind="Cases COVID-19", duration_pandemic=110,join.mod2 = F)
+
+library(ggplot2)
+ggplot(data= df_martorell_2021[1:260,], aes(consecutive_days, total_newcases_day))+
+  geom_line(aes(colour=consecutive_days))+
+  ggtitle("Cases in Martorell: 260 days")+
+  ylim(0,18)+
+  xlim(200,260)+
+  scale_y_continuous(breaks = seq(0, 20, by = 1))+
+  scale_x_continuous(breaks = seq(0, 260, by = 10))+
+  geom_vline(xintercept=which(df_martorell_2021$consecutive_days == '250'), linetype="dashed" , alpha= 0.5)
+
+r250_260<- range(df_martorell_2021[250:260,]$total_newcases_day)
+print(r250_260)
+
+#The range obtained is within the confidence interval. However, the regression line is increasing
+```
+
+
+```{r}
+
+#Cases in hospital
+pred.Casos.diarios<-covid.cases.cumcases3(X=df_martorell_2021$consecutive_days, Y=df_martorell_2021$cases_attended, max.cases.free=T, max.cases = max(df_martorell_2021$cases_attended) , lim.days=290,iterations = 100,label.ind="Cases COVID-19", duration_pandemic=300,join.mod2 = F)
+```
+
+## Comentarios de Script original con Toni en UB
+## Ingresar datos del modelo por olas, buscar las lineas de tendencia y luego proyectar la incidencia e incluir los datos en el modelo.
+## Multivariate time series model (MTS).
+## Require(MTS)
+## Frequenncy: Cada 24 horas en el modelo 
+
+## Multivariate time series model (MTS).
+## Reference documentation:
+## https://cran.r-project.org/web/packages/MTS/index.html
+## https://bookdown.org/singh_pratap_tejendra/intro_time_series_r/multivariate-ts-analysis.html
+
+```{r}
+# Packages
+
+require(tidyverse)
+require(tidymodels)
+require(data.table)
+require(tidyposterior)
+require(tsibble)  #tsibble for time series based on tidy principles
+require(fable)  #for forecasting based on tidy principles
+require(ggfortify)  #for plotting timeseries
+require(forecast)  #for forecast function
+require(tseries)
+require(chron)
+require(lubridate)
+require(directlabels)
+require(zoo)
+require(lmtest)
+require(TTR)  #for smoothing the time series
+require(MTS)
+require(vars)
+require(fUnitRoots)
+require(lattice)
+require(grid)
+
+```
+
+
+```{r}
+# Attaching the Martorell Hospital database. Convert de data variable and deleting columns: date, consecutive_days, new_cases_user and new_cases_professional.
+data<-data.frame(df_martorell_2021)
+data$date <- as.Date(data$date, format = "%Y-%m-%d")
+data$date <- NULL
+data$consecutive_days<-NULL
+data$new_cases_user<-NULL
+data$new_cases_professional<-NULL
+
+data100<- data[1:100,]
+head(data100)
+
+ts_COVID19 = ts(data100)
+class(ts_COVID19)
+plot(ts_COVID19)
+
+```
+
+```{r}
+#
+theme_set(theme_bw())
+autoplot(ts_COVID19) +
+  ggtitle("Time Series Plot of the `mymts' Time-Series") +
+  theme(plot.title = element_text(hjust = 0.4)) #for centering the text
+
+
+```
+
+```{r}
+# Main packages - problem: both have different functions VAR
+## Testing for stationarity
+### tseries - standard test adt.test
+apply(ts_COVID19, 2, adf.test)
+
+```
+
+```{r}
+# Alternative: lib fUnitRoots, function
+apply(ts_COVID19, 2, adfTest, 
+      lags=0, #maximum number of lags used for error term correction
+      type="c", #type of unit root regression
+      title = "ADF Test for COVID-19 Data") #title of the project
+```
+
+```{r}
+# Differencing the whole mts
+stnry = diffM(ts_COVID19) #difference operation on a vector of time series. Default order of differencing is 1.
+
+# Retest
+apply(ts_COVID19, 2, adf.test)
+```
+
+```{r}
+## VAR modeling
+plot.ts(stnry)
+
+autoplot(ts(stnry)) +
+  ggtitle("Time Series Plot of the stationary `COVID-19' Time-Series")
+```
+```{r}
+# Lag order identification
+#We will use two different functions, from two different packages to identify the lag order for the VAR model. Both functions are quite similar to each other but differ in the output they produce. vars::VAR is a more powerful and convinient function to identify the correct lag order. 
+
+VARselect(stnry, 
+          type = "none", #type of deterministic regressors to include. We use none because the time series was made stationary using differencing above. 
+          lag.max = 10) #highest lag order
+```
+
+```{r}
+# Creating a VAR model with vars
+var.a <- vars::VAR(stnry,
+                   lag.max = 10, #highest lag order for lag length selection according to the choosen ic
+                   ic = "AIC", #information criterion
+                   type = "none") #type of deterministic regressors to include
+summary(var.a)
+```
+
+```{r}
+# Residual diagnostics
+# serial.test function takes the VAR model as the input.  
+serial.test(var.a)
+```
+
+```{r}
+# selecting the variables
+# Granger test for causality
+# for causality function to give reliable results we need all the variables of the multivariate time series to be stationary. 
+
+causality(var.a, #VAR model
+          cause = c("cases_attended")) 
+
+#cause variable. If not specified then first column of x is used. Multiple variables can be used. 
+```
+
+```{r}
+## Forecasting VAR models
+fcast = predict(var.a, n.ahead = 10) # we forecast over a short horizon because beyond short horizon prediction becomes unreliable or uniform
+par(mar = c(2.5,2.5,2.5,2.5))
+plot(fcast)
+```
+
+```{r}
+# Forecasting the Cases attended 
+cases_attended = fcast$fcst[1] 
+cases_attended # type list
+class(cases_attended)
+
+```
+
+
+```{r}
+# Extracting the forecast column
+x = cases_attended$cases_attended[,1]
+x
+```
+
+```{r}
+tail(ts_COVID19)
+# Inverting the differencing
+#To get the data to the original scale we invert the time series
+#since the values are just difference from the previous value, to get the values on the original scale we add the last value from the Cases Attended time series to the predicted values.
+#the plot of the predicted values will also show that over longer horizon the predicted values are not reliable
+x = cumsum(x)+5
+x
+par(mar = c(2.5,2.5,1,2.5)) #bottom, left, top, and right
+plot.ts(x)
+```
+
+```{r}
+# Adding data and forecast to one time series
+cattended_inv =ts(c(ts_COVID19[,1], x))
+
+plot(cattended_inv)
+plot.ts(cattended_inv[100:110])
+
+```
+
+```{r}
+cattended_inv_df <- as.data.frame(cattended_inv[1:110]) 
+colnames(cattended_inv_df) <- c("x")
+head(cattended_inv_df)
+tail(cattended_inv_df)
+
+```
+
+
+```{r}
+#Pending result in chunk
+class(cattended_inv_df)
+
+df.real.attended= as.data.frame(df_martorell_2021$cases_attended)
+df.real.attended
+
+#Verification of Forecast with real data during 101-110 days.
+review_fcast.attended = cbind(cattended_inv_df[1:110, ] , df.real.attended[1:110, ])
+review_fcast.attended = as.data.frame(review_fcast.attended)
+names(review_fcast.attended)[1] <- "forecast"
+names(review_fcast.attended)[2] <- "cases"
+
+
+#Testing Error of Forecast
+review_fcast.attended<-review_fcast.attended %>% 
+  mutate(RPD = abs((cases-forecast)/((cases+forecast)/2)*100))
+
+review_fcast.attended <- review_fcast.attended[101:110, ]
+review_fcast.attended
+mean(review_fcast.attended$RPD)
+sd(review_fcast.attended$forecast)
+sd(review_fcast.attended$cases)
+
+
+#Ploting the forecast
+library(ggplot2)
+a=
+ggplot() + 
+  geom_line(data = as.data.frame(cattended_inv_df[1:100, ]), aes(y = get("cattended_inv_df[1:100, ]"), x = seq(1, 100)), color = "green") +
+  geom_line(data = as.data.frame(cattended_inv_df[101:110, ]), aes(y = get("cattended_inv_df[101:110, ]"), x = seq(101, 110)), color = "red")+
+  
+  geom_line(data = as.data.frame(df.real.attended[101:110, ]), aes(y = get("df.real.attended[101:110, ]"), x = seq(101, 110)), color = "blue",linetype=2) +
+  
+   theme(plot.title = element_text(hjust = 0.5)) +
+  xlab("Time: Days") + ylab("Cases")+
+  ggtitle("Cases Attended")
+a
+
+ggplot()+
+  geom_line(data = as.data.frame(cattended_inv_df[101:110, ]), aes(y = get("cattended_inv_df[101:110, ]"), x = seq(101, 110)), color = "red")+
+  
+  geom_line(data = as.data.frame(df.real.attended[101:110, ]), aes(y = get("df.real.attended[101:110, ]"), x = seq(101, 110)), color = "blue",linetype=2) +
+  
+   theme(plot.title = element_text(hjust = 0.5)) +
+  xlab("Time") + ylab("Value")
+```
+
+
+
+
+
+## Total Hospitalized
+Forecasting new cases per day.
+```{r New Cases per Day}
+# Forecasting new cases per day
+totalhosp = fcast$fcst[2] 
+totalhosp # type list
+class(totalhosp)
+
+```
+
+
+```{r}
+# Extracting the forecast column
+x.totalhosp= totalhosp$total_hospitalized[,1]
+x.totalhosp
+```
+
+```{r}
+tail(ts_COVID19)
+# Inverting the differencing
+#To get the data to the original scale we invert the time series
+#since the values are just difference from the previous value, to get the values on the original scale we add the last value from the Cases Attended time series to the predicted values.
+#the plot of the predicted values will also show that over longer horizon the predicted values are not reliable
+x.totalhosp = cumsum(x.totalhosp)+8
+x.totalhosp
+par(mar = c(2.5,2.5,1,2.5)) #bottom, left, top, and right
+plot.ts(x.totalhosp)
+```
+
+```{r}
+# Adding data and forecast to one time series
+totalhosp_inv =ts(c(ts_COVID19[,2], x.totalhosp))
+
+plot(totalhosp_inv)
+plot.ts(totalhosp_inv[100:110])
+
+```
+
+```{r}
+totalhosp_inv_df <- as.data.frame(totalhosp_inv[1:110]) 
+colnames(totalhosp_inv_df) <- c("x")
+head(totalhosp_inv_df)
+tail(totalhosp_inv_df)
+
+```
+
+
+```{r}
+#Forecast Total Hospitalized
+class(totalhosp_inv_df)
+
+df.total.hosp= as.data.frame(df_martorell_2021$total_hospitalized)
+df.total.hosp
+
+#Verification of Forecast with real data during 101-110 days. Point of Control
+review_fcast.hosp = cbind(totalhosp_inv_df[1:110, ] , df.total.hosp[1:110, ])
+review_fcast.hosp
+
+#Verification of Forecast with real data during 101-110 days. Point of Control
+review_fcast.hosp = cbind(totalhosp_inv_df[1:110, ] , df.total.hosp[1:110, ])
+review_fcast.hosp= as.data.frame(review_fcast.hosp)
+names(review_fcast.hosp)[1] <- "forecast"
+names(review_fcast.hosp)[2] <- "cases"
+
+
+#Testing Error of Forecast
+review_fcast.hosp<-review_fcast.hosp %>% 
+  mutate(RPD = abs((cases-forecast)/((cases+forecast)/2)*100))
+
+review_fcast.hosp <- review_fcast.hosp[101:110, ]
+review_fcast.hosp
+mean(review_fcast.hosp$RPD)
+sd(review_fcast.hosp$forecast)
+sd(review_fcast.hosp$cases)
+
+
+#Ploting the forecast
+library(ggplot2)
+b= ggplot() + 
+  geom_line(data = as.data.frame(totalhosp_inv_df[1:100, ]), aes(y = get("totalhosp_inv_df[1:100, ]"), x = seq(1, 100)), color = "green") +
+  geom_line(data = as.data.frame(totalhosp_inv_df[101:110, ]), aes(y = get("totalhosp_inv_df[101:110, ]"), x = seq(101, 110)), color = "red")+
+  
+  geom_line(data = as.data.frame(df.total.hosp[101:110, ]), aes(y = get("df.total.hosp[101:110, ]"), x = seq(101, 110)), color = "blue",linetype=2) +
+  
+   theme(plot.title = element_text(hjust = 0.5)) +
+  xlab("Time: Days") + ylab("Cases")+
+  ggtitle("Hospitalized Patients")
+b
+
+ggplot()+
+  geom_line(data = as.data.frame(totalhosp_inv_df[101:110, ]), aes(y = get("totalhosp_inv_df[101:110, ]"), x = seq(101, 110)), color = "red")+
+  
+  geom_line(data = as.data.frame(df.total.hosp[101:110, ]), aes(y = get("df.total.hosp[101:110, ]"), x = seq(101, 110)), color = "blue",linetype=2) +
+  
+   theme(plot.title = element_text(hjust = 0.5)) +
+  xlab("Time: Days") + ylab("Cases")
+```
+
+
+
+
+
+
+## pending PCR
+Forecasting new cases per day.
+```{r New Cases per Day}
+# Forecasting pending PCR per patient
+ppcr = fcast$fcst[3] 
+ppcr # type list
+class(ppcr)
+
+```
+
+
+```{r}
+# Extracting the forecast column
+x.ppcr= ppcr$patientes_pending_pcr[,1]
+x.ppcr
+```
+
+```{r}
+tail(ts_COVID19)
+# Inverting the differencing
+#To get the data to the original scale we invert the time series
+#since the values are just difference from the previous value, to get the values on the original scale we add the last value from the Cases Attended time series to the predicted values.
+#the plot of the predicted values will also show that over longer horizon the predicted values are not reliable
+x.ppcr = cumsum(x.ppcr)+1
+x.ppcr
+par(mar = c(2.5,2.5,1,2.5)) #bottom, left, top, and right
+plot.ts(x.ppcr)
+```
+
+```{r}
+# Adding data and forecast to one time series
+ppcr_inv =ts(c(ts_COVID19[,3], x.ppcr))
+
+plot(ppcr_inv)
+plot.ts(ppcr_inv[100:110])
+
+```
+
+```{r}
+ppcr_inv_df <- as.data.frame(ppcr_inv[1:110]) 
+colnames(ppcr_inv_df) <- c("x")
+head(ppcr_inv_df)
+tail(ppcr_inv_df)
+
+```
+
+
+```{r}
+#Pending result in chunk
+class(ppcr_inv_df)
+
+df.p.pcr= as.data.frame(df_martorell_2021$patientes_pending_pcr)
+df.p.pcr
+
+#Verification of Forecast with real data during 101-110 days. Point of Control
+review_fcast.ppcr = cbind(ppcr_inv_df[1:110, ] , df.p.pcr[1:110, ])
+review_fcast.ppcr = as.data.frame(review_fcast.ppcr)
+names(review_fcast.ppcr)[1] <- "forecast"
+names(review_fcast.ppcr)[2] <- "cases"
+
+
+#Testing Error of Forecast
+review_fcast.ppcr<-review_fcast.ppcr %>% 
+  mutate(RPD = abs((cases-forecast)/((cases+forecast)/2)*100))
+
+review_fcast.ppcr <- review_fcast.ppcr[101:110, ]
+review_fcast.ppcr
+mean(review_fcast.ppcr$RPD)
+sd(review_fcast.ppcr$forecast)
+sd(review_fcast.ppcr$cases)
+
+#Ploting the forecast
+library(ggplot2)
+c=
+ggplot() + 
+  geom_line(data = as.data.frame(ppcr_inv_df[1:100, ]), aes(y = get("ppcr_inv_df[1:100, ]"), x = seq(1, 100)), color = "green") +
+  geom_line(data = as.data.frame(ppcr_inv_df[101:110, ]), aes(y = get("ppcr_inv_df[101:110, ]"), x = seq(101, 110)), color = "red")+
+  
+  geom_line(data = as.data.frame(df.p.pcr[101:110, ]), aes(y = get("df.p.pcr[101:110, ]"), x = seq(101, 110)), color = "blue",linetype=2) +
+  
+   theme(plot.title = element_text(hjust = 0.5)) +
+  xlab("Time: Days") + ylab("Cases")+
+  ggtitle("PCR Pending")
+c
+
+ggplot()+
+  geom_line(data = as.data.frame(ppcr_inv_df[101:110, ]), aes(y = get("ppcr_inv_df[101:110, ]"), x = seq(101, 110)), color = "red")+
+  
+  geom_line(data = as.data.frame(df.p.pcr[101:110, ]), aes(y = get("df.p.pcr[101:110, ]"), x = seq(101, 110)), color = "blue",linetype=2) +
+  
+   theme(plot.title = element_text(hjust = 0.5)) +
+  xlab("Time") + ylab("Value")
+```
+
+
+
+
+## Patient Discharged
+Forecasting Patient Discharged per Day.
+```{r New Cases per Day}
+# Forecasting pending PCR per patient
+pdischarge = fcast$fcst[4] 
+pdischarge # type list
+class(pdischarge)
+
+```
+
+
+```{r}
+# Extracting the forecast column
+x.pdischarge= pdischarge$patient_discharge[,1]
+x.pdischarge
+```
+
+```{r}
+tail(ts_COVID19)
+# Inverting the differencing
+#To get the data to the original scale we invert the time series
+#since the values are just difference from the previous value, to get the values on the original scale we add the last value from the Cases Attended time series to the predicted values.
+#the plot of the predicted values will also show that over longer horizon the predicted values are not reliable
+x.pdischarge = cumsum(x.pdischarge)+3
+x.pdischarge
+par(mar = c(2.5,2.5,1,2.5)) #bottom, left, top, and right
+plot.ts(x.pdischarged)
+```
+
+```{r}
+# Adding data and forecast to one time series
+pdischarge_inv =ts(c(ts_COVID19[,4], x.pdischarge))
+
+plot(pdischarge_inv)
+plot.ts(pdischarge_inv[100:110])
+
+```
+
+```{r}
+pdischarge_inv_df <- as.data.frame(pdischarge_inv[1:110]) 
+colnames(pdischarge_inv_df) <- c("x")
+head(pdischarge_inv_df)
+tail(pdischarge_inv_df)
+
+```
+
+
+```{r}
+#Forecast Discharge Patient.
+class(pdischarge_inv_df)
+
+df.p.discharge= as.data.frame(df_martorell_2021$patient_discharge)
+df.p.discharge
+
+#Verification of Forecast with real data during 101-110 days. Point of Control
+review_fcast.discharge = cbind(pdischarge_inv_df[1:110, ] , df.p.discharge[1:110, ])
+review_fcast.discharge = as.data.frame(review_fcast.discharge)
+class(review_fcast.discharge$cases)
+names(review_fcast.discharge)[1] <- "forecast"
+names(review_fcast.discharge)[2] <- "cases"
+
+
+#Testing Error of Forecast
+review_fcast.discharge<-review_fcast.discharge %>% 
+  mutate(RPD = abs((cases-forecast)/((cases+forecast)/2)*100))
+
+bias.fcast.discharge <- review_fcast.discharge[101:110, ]
+bias.fcast.discharge
+mean(bias.fcast.discharge$RPD)
+sd(bias.fcast.discharge$forecast)
+sd(bias.fcast.discharge$cases)
+
+
+#Ploting the forecast
+library(ggplot2)
+d=
+ggplot() + 
+  geom_line(data = as.data.frame(pdischarge_inv_df[1:100, ]), aes(y = get("pdischarge_inv_df[1:100, ]"), x = seq(1, 100)), color = "green") +
+  geom_line(data = as.data.frame(pdischarge_inv_df[101:110, ]), aes(y = get("pdischarge_inv_df[101:110, ]"), x = seq(101, 110)), color = "red")+
+  
+  geom_line(data = as.data.frame(df.p.discharge[101:110, ]), aes(y = get("df.p.discharge[101:110, ]"), x = seq(101, 110)), color = "blue",linetype=2) +
+  
+   theme(plot.title = element_text(hjust = 0.5)) +
+  xlab("Time: Days") + ylab("Cases")+
+  ggtitle("Discharge Patient")
+d
+
+ggplot()+
+  geom_line(data = as.data.frame(pdischarge_inv_df[101:110, ]), aes(y = get("pdischarge_inv_df[101:110, ]"), x = seq(101, 110)), color = "red")+
+  
+  geom_line(data = as.data.frame(df.p.discharge[101:110, ]), aes(y = get("df.p.discharge[101:110, ]"), x = seq(101, 110)), color = "blue",linetype=2) +
+  
+   theme(plot.title = element_text(hjust = 0.5)) +
+  xlab("Time") + ylab("Value")
+```
+
+## New Cases Per Day
+Forecasting new cases per day.
+```{r New Cases per Day}
+# Forecasting new cases per day
+newcases = fcast$fcst[5] 
+newcases # type list
+class(newcases)
+
+```
+
+
+```{r}
+# Extracting the forecast column
+x.newcases = newcases$total_newcases_day[,1]
+x.newcases
+```
+
+```{r}
+tail(ts_COVID19)
+# Inverting the differencing
+#To get the data to the original scale we invert the time series
+#since the values are just difference from the previous value, to get the values on the original scale we add the last value from the Cases Attended time series to the predicted values.
+#the plot of the predicted values will also show that over longer horizon the predicted values are not reliable
+x.newcases = cumsum(x.newcases)+2
+x.newcases
+par(mar = c(2.5,2.5,1,2.5)) #bottom, left, top, and right
+plot.ts(x.newcases)
+```
+
+```{r}
+# Adding data and forecast to one time series
+newcases_inv =ts(c(ts_COVID19[,5], x.newcases))
+
+plot(newcases_inv)
+plot.ts(newcases_inv[100:110])
+
+```
+
+```{r}
+newcases_inv_df <- as.data.frame(newcases_inv[1:110]) 
+colnames(newcases_inv_df) <- c("x")
+head(newcases_inv_df)
+tail(newcases_inv_df)
+
+```
+
+
+```{r}
+#Pending result in chunk
+class(newcases_inv_df)
+
+df.new.cases= as.data.frame(df_martorell_2021$total_newcases_day)
+df.new.cases
+
+#Verification of Forecast with real data during 101-110 days.
+review_fcast.ncases = cbind(newcases_inv_df[1:110, ] , df.new.cases[1:110, ])
+review_fcast.ncases= as.data.frame(review_fcast.ncases)
+
+names(review_fcast.ncases)[1] <- "forecast"
+names(review_fcast.ncases)[2] <- "cases"
+review_fcast.ncases<- review_fcast.ncases[101:110, ]
+
+review_fcast.ncases<-review_fcast.ncases %>% 
+  mutate(RPD = abs((cases-forecast)/((cases+forecast)/2)*100))
+
+
+review_fcast.ncases
+mean(review_fcast.ncases$RPD)
+sd(review_fcast.ncases$forecast)
+sd(review_fcast.ncases$cases)
+
+```
+
+
+```{r}
+
+#Ploting the forecast
+library(ggplot2)
+e=
+ggplot() + 
+  geom_line(data = as.data.frame(newcases_inv_df[1:100, ]), aes(y = get("newcases_inv_df[1:100, ]"), x = seq(1, 100)), color = "green") +
+  geom_line(data = as.data.frame(newcases_inv_df[101:110, ]), aes(y = get("newcases_inv_df[101:110, ]"), x = seq(101, 110)), color = "red")+
+  
+  geom_line(data = as.data.frame(df.new.cases[101:110, ]), aes(y = get("df.new.cases[101:110, ]"), x = seq(101, 110)), color = "blue",linetype=2) +
+  
+   theme(plot.title = element_text(hjust = 0.5)) +
+  xlab("Time: Days") + ylab("Cases")+
+  ggtitle("New Cases")
+e
+
+ggplot()+
+  geom_line(data = as.data.frame(newcases_inv_df[101:110, ]), aes(y = get("newcases_inv_df[101:110, ]"), x = seq(101, 110)), color = "red")+
+  
+  geom_line(data = as.data.frame(df.new.cases[101:110, ]), aes(y = get("df.new.cases[101:110, ]"), x = seq(101, 110)), color = "blue",linetype=2) +
+  
+   theme(plot.title = element_text(hjust = 0.5)) +
+  xlab("Time") + ylab("Cases")
+
+
+```
+
+```{r}
+install.packages("ggpubr")
+library(ggpubr)
+
+ggarrange(a,b, c, d, e , 
+          labels = c("A", "B", "C", "D", "E"),
+          ncol = 2, nrow = 3)
+```
+
+
